@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hermes-xmpp"
+version = "0.1.0"
+description = "XMPP platform adapter for Hermes Agent"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Emma Apollo", email = "emma@thanosapollo.org" }]
+dependencies = [
+  "slixmpp[xep-0363]>=1.10,<2",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.8", "pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hermes_xmpp*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

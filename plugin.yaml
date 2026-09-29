@@ -1,0 +1,158 @@
+name: xmpp-platform
+label: XMPP
+kind: platform
+version: 0.1.0
+description: >
+  XMPP gateway adapter for Hermes Agent. Supports direct chats first and
+  conservative MUC room routing second.
+author: Emma Apollo
+requires_env:
+  - name: XMPP_JID
+    description: "XMPP account JID, for example bot@example.org"
+    prompt: "XMPP JID"
+    password: false
+  - name: XMPP_SERVER
+    description: "XMPP server hostname"
+    prompt: "XMPP server"
+    password: false
+optional_env:
+  - name: XMPP_PASSWORD
+    description: "XMPP account password; prefer XMPP_PASSWORD_FILE or XMPP_PASSWORD_COMMAND"
+    prompt: "XMPP password"
+    password: true
+  - name: XMPP_PASSWORD_FILE
+    description: "Path to a file containing the XMPP password"
+    prompt: "Password file"
+    password: false
+  - name: XMPP_PASSWORD_COMMAND
+    description: "Command that prints the XMPP password"
+    prompt: "Password command"
+    password: false
+  - name: XMPP_PORT
+    description: "Optional XMPP TCP port; default 5222 unless the server URL includes a port"
+    prompt: "XMPP port"
+    password: false
+  - name: XMPP_HOST
+    description: "Compatibility alias for XMPP_SERVER"
+    prompt: "XMPP host alias"
+    password: false
+  - name: XMPP_RESOURCE
+    description: "XMPP resource name, default hermes"
+    prompt: "XMPP resource"
+    password: false
+  - name: XMPP_NICKNAME
+    description: "Nickname for MUC rooms"
+    prompt: "MUC nickname"
+    password: false
+  - name: XMPP_MUC_NICK
+    description: "Compatibility alias for XMPP_NICKNAME"
+    prompt: "MUC nickname alias"
+    password: false
+  - name: XMPP_ROOMS
+    description: "Comma-separated MUC room JIDs to join"
+    prompt: "MUC rooms"
+    password: false
+  - name: XMPP_MUC_ROOMS
+    description: "Compatibility alias for XMPP_ROOMS"
+    prompt: "MUC rooms alias"
+    password: false
+  - name: XMPP_ALLOWED_USERS
+    description: "Comma-separated bare JIDs/patterns allowed to use direct chat; supports exact JID, *@domain, and *"
+    prompt: "Allowed direct-chat JIDs"
+    password: false
+  - name: XMPP_DM_POLICY
+    description: "Direct-message policy: allowlist, open, disabled, or pairing"
+    prompt: "DM policy"
+    password: false
+  - name: XMPP_ALLOW_ALL_USERS
+    description: "Allow all direct-chat users; development/trusted use only"
+    prompt: "Allow all users?"
+    password: false
+  - name: XMPP_GROUP_POLICY
+    description: "MUC/group policy: allowlist, open, or disabled"
+    prompt: "Group policy"
+    password: false
+  - name: XMPP_ALLOWED_ROOMS
+    description: "Comma-separated MUC room JIDs allowed when group policy is allowlist"
+    prompt: "Allowed MUC rooms"
+    password: false
+  - name: XMPP_GROUP_ALLOW_FROM
+    description: "Comma-separated bare JIDs/patterns allowed inside MUCs"
+    prompt: "Allowed MUC sender JIDs"
+    password: false
+  - name: XMPP_MUC_REQUIRE_MENTION
+    description: "Require bot nickname mention in MUCs, default true"
+    prompt: "Require MUC mention?"
+    password: false
+  - name: XMPP_KEEPALIVE_INTERVAL
+    description: "Seconds between XMPP whitespace keepalives; keeps an idle stream from being reaped, default 60"
+    prompt: "Keepalive interval (seconds)"
+    password: false
+  - name: XMPP_PING_INTERVAL
+    description: "Seconds of inactivity before an XEP-0410 self ping is sent, default 60"
+    prompt: "Ping interval (seconds)"
+    password: false
+  - name: XMPP_PING_TIMEOUT
+    description: "Seconds to wait for the XEP-0410 self ping reply before treating the stream as dead, default 30"
+    prompt: "Ping timeout (seconds)"
+    password: false
+  - name: XMPP_HOME_CHAT
+    description: "Default chat or room JID for cron/notification delivery"
+    prompt: "Home chat"
+    password: false
+  - name: XMPP_HOME_CHANNEL
+    description: "Compatibility alias for XMPP_HOME_CHAT"
+    prompt: "Home channel alias"
+    password: false
+  - name: XMPP_TEXT_CHUNK_LIMIT
+    description: "Split outbound text above this many characters before sending"
+    prompt: "Text chunk limit"
+    password: false
+  - name: XMPP_MAX_MESSAGE_LENGTH
+    description: "Compatibility alias for XMPP_TEXT_CHUNK_LIMIT"
+    prompt: "Max message length alias"
+    password: false
+  - name: XMPP_SEND_DELIVERY_RECEIPTS
+    description: "Send XEP-0184 delivery receipts to authorized direct messages that request them; default true"
+    prompt: "Send delivery receipts?"
+    password: false
+  - name: XMPP_SEND_RECEIVED_MARKERS
+    description: "Send XEP-0333 received markers to authorized direct messages marked as markable; default true"
+    prompt: "Send received chat markers?"
+    password: false
+  - name: XMPP_SEND_READ_RECEIPTS
+    description: "Send XEP-0333 displayed/read markers; default false for privacy"
+    prompt: "Send displayed/read markers?"
+    password: false
+  - name: XMPP_SEND_CHAT_STATES
+    description: "Send XEP-0085 composing/active chat-state notifications while processing; default true"
+    prompt: "Send chat-state typing indicators?"
+    password: false
+  - name: XMPP_REACTIONS
+    description: "Send XEP-0444 processing reactions to authorized messages; default true"
+    prompt: "Send processing reactions?"
+    password: false
+  - name: XMPP_REACTION_START_CHOICES
+    description: "Comma-separated XEP-0444 reaction choices for processing start; default 👀"
+    prompt: "Processing start reaction choices"
+    password: false
+  - name: XMPP_REACTION_SUCCESS_CHOICES
+    description: "Comma-separated XEP-0444 reaction choices for successful completion; default ✅"
+    prompt: "Success reaction choices"
+    password: false
+  - name: XMPP_REACTION_FAILURE_CHOICES
+    description: "Comma-separated XEP-0444 reaction choices for failed completion; default ❌"
+    prompt: "Failure reaction choices"
+    password: false
+  - name: XMPP_PROGRESS_DELIVERY
+    description: "Lifecycle status delivery: messages (default) or edit (capability-gated XEP-0308 corrections)"
+    prompt: "Lifecycle status delivery mode"
+    password: false
+  - name: XMPP_EDITABLE_PROGRESS
+    description: "When lifecycle status delivery is edit: known (probe recipient support, default) or disabled"
+    prompt: "Editable lifecycle status policy"
+    password: false
+  - name: XMPP_ANONYMOUS_MUC_POLICY
+    description: "Anonymous MUC nick handling: mention_only (default), allow, or deny"
+    prompt: "Anonymous MUC policy"
+    password: false
