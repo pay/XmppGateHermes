@@ -1,155 +1,125 @@
-# hermes-xmpp
+# XmppGateHermes
 
-Hermes Agent XMPP platform adapter, modeled conceptually after `openclaw-xmpp` but implemented against Hermes gateway plugin abstractions.
+XMPP/Jabber platform adapter for **Hermes Agent**, proven running on **Android / Termux**
+alongside the Telegram gateway. This repo documents a working integration: one Hermes
+gateway serving **Telegram and XMPP at the same time**, with MUC (group) room support.
 
-Status: Hermes-native adapter implementation in progress. It remains isolated from OpenClaw and is designed for local Hermes plugin installation after tests pass.
+> **Status: verified on a real device.** Every claim in `docs/TESTING.md` was observed on a
+> Termux install, not assumed. Known limitations and environment-specific bugs are listed
+> honestly in `docs/KNOWN-ISSUES.md`.
 
-## Goals
+## What this is
 
-- Direct XMPP chats first.
-- MUC room support second, with conservative mention/allowlist defaults.
-- Hermes-native platform registration through `ctx.register_platform()`.
-- Secret handling through env vars, password files, or password commands.
-- Clear separation from OpenClaw runtime state.
+- A Hermes **platform plugin** (`xmpp-platform`) that registers an XMPP adapter through
+  Hermes' `ctx.register_platform()` gateway API.
+- `slixmpp`-based transport (XEP-0184 receipts, XEP-0333 chat markers, XEP-0085 chat
+  states, XEP-0444 reactions, XEP-0308 corrections, XEP-0363 HTTP Upload, XEP-0045 MUC).
+- An operator runbook for installing, hardening and troubleshooting it on Termux, where the
+  Hermes plugin manager and Android's filesystem differ from desktop Linux.
 
-## Hermes Plugin Shape
+The adapter source lives in `hermes_xmpp/adapter.py`. The docs here are the part that is
+usually missing: what actually breaks on a phone, and the verified workaround.
 
-Hermes community platform plugins use:
+## Features
 
-- `plugin.yaml` for metadata and setup UI env prompts.
-- `adapter.py` with a `BasePlatformAdapter` subclass.
-- `register(ctx)` to call `ctx.register_platform(...)`.
+- Direct (1:1) XMPP chats and MUC rooms served through the same agent.
+- Runs **concurrently with the Telegram gateway** — one agent, two messaging platforms.
+- Conservative access control: direct-chat allowlist, per-room and per-sender group
+  allowlists, nickname-mention gating in rooms.
+- Typing indicators, delivery receipts, read markers, emoji reactions, live "editing"
+  progress updates (capability-gated).
+- Outbound media via XEP-0363 HTTP Upload.
+- Secret handling via env var, password file, or password command (never hardcoded).
 
-This repository keeps the adapter in `hermes_xmpp/adapter.py`. For local Hermes plugin discovery, symlink or copy the repository into the operator's Hermes plugin directory only after review.
+## Verified baseline
+
+These are **observed** facts from the device this repo was authored on (Termux, Android,
+Python 3.14). They describe a state that was reached and logged, not a target:
+
+| Item | Value |
+| --- | --- |
+| Hermes Agent | `v0.22.0+canary` APT payload on Termux |
+| Python | 3.14 (`sys.platform == "android"`) |
+| Concurrent platforms | Telegram gateway + XMPP adapter, both `connected` |
+| Plugin key | `xmpp-platform` |
+| Verified dependency | `slixmpp 1.17.0` (via `slixmpp[xep-0363]`) |
+| XMPP resource | `flip4` |
+| MUC rooms joined | `tangerang@conference.jabber.ru`, `code@conference.conversations.im` |
+| Outbound message to a room | confirmed delivered and logged |
+| Test suite | `125 passed, 2 skipped` (see `docs/TESTING.md`) |
+
+The plugin manager (PM) on this build could **not** enable the plugin through the normal
+`hermes plugins enable` path — see `docs/KNOWN-ISSUES.md`. Activation was done by editing
+`config.yaml` after a backup. That is a finding about *this* Termux environment, not a
+universal Hermes bug.
+
+Personal JIDs, allowlist entries, passwords, tokens, local IPs and `.env` contents are
+deliberately **not** in this repo. See `docs/SECURITY.md`.
+
+## Requirements
+
+- Android device running **Termux** (aarch64).
+- Hermes Agent installed (this docs set targets the APT/bundle payload under
+  `$PREFIX/lib/hermes-agent`).
+- An XMPP account for the bot, on a server reachable over TCP 5222 with STARTTLS.
+- `uv` (ships with the Hermes Termux bundle) to install the adapter's Python dependency.
 
 ## Installation
 
-### Requirements
-
-- Hermes Agent with plugin support.
-- Python 3.11+.
-- `slixmpp>=1.10,<2` available to the same Python environment that runs Hermes.
-- An XMPP account for the bot.
-
-### Install as a local Hermes plugin
-
-Clone the repository and expose it as `xmpp-platform` under the Hermes plugin directory:
+Full, copy-pasteable steps — including the Termux-specific workaround for the plugin
+manager — are in **`docs/INSTALLATION.md`**. The short version:
 
 ```sh
-git clone <repo-url> ~/Projects/hermes-xmpp
-mkdir -p ~/.hermes/plugins
-ln -sfn ~/Projects/hermes-xmpp ~/.hermes/plugins/xmpp-platform
-hermes plugins enable xmpp-platform
-```
+# 1. install the runtime dependency into the GATEWAY venv (not tools/python)
+uv pip install --python "$PREFIX/lib/hermes-agent/venv/bin/python3" 'slixmpp[xep-0363]>=1.10,<2'
 
-If you prefer copying instead of symlinking:
-
-```sh
-rm -rf ~/.hermes/plugins/xmpp-platform
+# 2. drop the plugin into the Hermes plugin dir
 mkdir -p ~/.hermes/plugins/xmpp-platform
-rsync -a --exclude='.git' --exclude='__pycache__' --exclude='.pytest_cache' \
-  ~/Projects/hermes-xmpp/ ~/.hermes/plugins/xmpp-platform/
-hermes plugins enable xmpp-platform
+rsync -a --exclude='.git' ~/XmppGateHermes/ ~/.hermes/plugins/xmpp-platform/
+
+# 3. enable it (on this Termux build: edit config.yaml directly — see docs/KNOWN-ISSUES.md)
+# 4. set XMPP_* env vars in ~/.hermes/.env  (names and meanings: docs/INSTALLATION.md)
+# 5. restart the gateway
+~/gate.sh restart
 ```
 
-Install the Python dependency in the Hermes runtime environment. For a venv-based Hermes install:
+## Documentation
 
-```sh
-python -m pip install 'slixmpp>=1.10,<2'
-```
+| File | What it covers |
+| --- | --- |
+| `docs/ARCHITECTURE.md` | Adapter design, how it plugs into the Hermes gateway, Telegram+XMPP interplay |
+| `docs/INSTALLATION.md` | Termux-specific install, step by step |
+| `docs/CONFIG-REFERENCE.md` | Every env var: name, default, purpose (names only, no values) |
+| `docs/TROUBLESHOOTING.md` | Verified diagnosis flow and the fixes that worked |
+| `docs/SECURITY.md` | Secrets, allowlists, TLS, MUC as a public surface |
+| `docs/TESTING.md` | Test scenarios and their real results |
+| `docs/KNOWN-ISSUES.md` | Bugs, environment quirks, compatibility notes |
+| `docs/SKILL.md` | The `hermes-xmpp-termux` Hermes skill and how it maps here |
+| `patches/README.md` | The one Hermes-core patch and why it exists |
+| `notes/` | Upstream design/architecture notes (background reading) |
+| `skills/hermes-xmpp-termux/SKILL.md` | Shipped copy of the operator skill (live copy in `~/.hermes/skills/`) |
 
-For a Nix-packaged Hermes install, do not `pip install` into the immutable store. Add `slixmpp` to the Hermes wrapper/package environment declaratively, then rebuild the profile or Home Manager generation that provides `hermes`.
+A reusable Hermes skill, **`hermes-xmpp-termux`**, also encodes this runbook for in-session
+use — Hermes loads it automatically when an XMPP-on-Termux problem appears. A byte-identical
+copy ships in this repo at `skills/hermes-xmpp-termux/SKILL.md`; the live one Hermes loads
+is `~/.hermes/skills/hermes/hermes-xmpp-termux/SKILL.md`. Like every file here, it holds no
+secrets — `~/.hermes/.env` keys are named, never valued. See `docs/SKILL.md`.
 
-### Configure credentials
+## Safety notes
 
-Prefer a password file or password command over putting a password directly in `.env`:
+- Restarting the Hermes gateway drops the messaging connections for ~25–30 s. During that
+  window inbound messages can be **lost** (cold-boot drops the pending queue). Restart only
+  when your chats are quiet.
+- Commands in these docs are tagged *(read-only)*, *(changes system)*, or
+  *(requires restart)* so you can tell before you run them which ones disturb a live
+  gateway.
 
-```dotenv
-XMPP_JID="bot@example.org"
-XMPP_SERVER="chat.example.org"
-XMPP_RESOURCE="hermes"
-XMPP_PASSWORD_COMMAND="pass show xmpp/bot/password"
-XMPP_ALLOWED_USERS="user@example.org"
-XMPP_DM_POLICY="allowlist"
-XMPP_HOME_CHAT="user@example.org"
-```
+## License
 
-Then restart or run the Hermes gateway:
+Source in this repo is MIT (`LICENSE`), matching the upstream plugin, `slixmpp`, and Hermes
+Agent itself. See `LICENSE` and the note in `docs/KNOWN-ISSUES.md` about third-party code.
 
-```sh
-hermes gateway run --replace
-```
+## Contributing
 
-A minimal standalone send smoke test can be done with Hermes' normal send-message tooling after the gateway/plugin is loaded, or by sending a direct message to the configured XMPP account and verifying Hermes replies.
-
-## Configuration
-
-Environment variables:
-
-- `XMPP_JID`: account JID, for example `bot@example.org`.
-- `XMPP_SERVER`: XMPP server hostname, `host:port`, or URL such as `xmpp://chat.example.org:5222`. Alias: `XMPP_HOST`.
-- `XMPP_PORT`: optional TCP port override.
-- `XMPP_PASSWORD`: account password. Prefer `XMPP_PASSWORD_FILE` or `XMPP_PASSWORD_COMMAND`.
-- `XMPP_PASSWORD_FILE`: file containing the password.
-- `XMPP_PASSWORD_COMMAND`: command that prints the password to stdout, for example `pass show xmpp/bot@example.org`.
-- `XMPP_RESOURCE`: resource name, default `hermes`.
-- `XMPP_NICKNAME`: MUC nickname, default localpart from `XMPP_JID`. Alias: `XMPP_MUC_NICK`.
-- `XMPP_ROOMS`: comma-separated MUC JIDs to join. Alias: `XMPP_MUC_ROOMS`.
-- `XMPP_ALLOWED_USERS`: comma-separated bare JIDs or patterns allowed to use direct chat. Supports exact JIDs, `*@domain`, and `*`.
-- `XMPP_DM_POLICY`: `allowlist` (default), `open`, `disabled`, or `pairing` (treated as allowlist unless Hermes pairing is configured separately).
-- `XMPP_ALLOW_ALL_USERS`: allow all direct-chat senders. Use only for trusted/dev environments.
-- `XMPP_GROUP_POLICY`: `allowlist` (default), `open`, or `disabled`.
-- `XMPP_ALLOWED_ROOMS`: comma-separated MUC room JIDs allowed when group policy is `allowlist`.
-- `XMPP_GROUP_ALLOW_FROM`: comma-separated bare JIDs or patterns allowed inside MUCs. A groupchat message carries only the sender's nickname, so the adapter resolves the nickname to its real JID from occupant presence (XEP-0045 `<muc#user><x><item jid='...'/>`) before matching; in a room that exposes no occupant JIDs, this allowlist cannot match and the message is denied.
-- `XMPP_MUC_REQUIRE_MENTION`: default `true`.
-- `XMPP_KEEPALIVE_INTERVAL`: seconds between XMPP whitespace keepalives, default 60. A silent stream is reaped by the server or an intermediate NAT after a few minutes, which surfaces as `connection_lost` on an otherwise idle room; keepalives prevent it. slixmpp's own default is 300s, which is too slow for most servers.
-- `XMPP_PING_INTERVAL`: seconds of inactivity before an XEP-0410 self ping is sent, default 60. XEP-0199 (`xep_0199`) is fire-and-forget: a ping written into a dead socket raises nothing, so a dead stream is only noticed after the fact. XEP-0410 closes that loop by timing out on an unanswered ping.
-- `XMPP_PING_TIMEOUT`: seconds to wait for the self ping reply before the stream is treated as dead, default 30.
-- `XMPP_HOME_CHAT`: default destination for cron/notification delivery. Alias: `XMPP_HOME_CHANNEL`.
-- `XMPP_TEXT_CHUNK_LIMIT`: split outbound text above this many characters before sending. Alias: `XMPP_MAX_MESSAGE_LENGTH`.
-- `XMPP_SEND_DELIVERY_RECEIPTS`: send XEP-0184 `<received xmlns='urn:xmpp:receipts'/>` replies to authorized direct-chat messages that request them. Default `true`.
-- `XMPP_SEND_RECEIVED_MARKERS`: send XEP-0333 `<received xmlns='urn:xmpp:chat-markers:0'/>` markers to authorized direct-chat messages marked `<markable/>`. Default `true`.
-- `XMPP_SEND_READ_RECEIPTS`: send XEP-0333 `<displayed/>` read/display markers to authorized direct-chat messages marked `<markable/>`. Default `false` for privacy.
-- `XMPP_REACTIONS`: send XEP-0444 processing reactions to authorized messages. Default `true`; direct messages are allowed after DM authorization, and MUC reactions stay behind the same room/sender/mention gates as message processing.
-- `XMPP_REACTION_START_CHOICES`: comma-separated reaction choices for processing start; one is chosen randomly. Default `👀`.
-- `XMPP_REACTION_SUCCESS_CHOICES`: comma-separated reaction choices for successful completion; one is chosen randomly. Default `✅`.
-- `XMPP_REACTION_FAILURE_CHOICES`: comma-separated reaction choices for failed completion; one is chosen randomly. Default `❌`.
-- `XMPP_EDITABLE_PROGRESS`: controls XEP-0308 edits when editable delivery is enabled. `known` (default) requires a positive recipient support probe; `disabled` avoids correction stanzas.
-- `XMPP_PROGRESS_DELIVERY`: `messages` (default) sends lifecycle status messages normally. `edit` lets repeated status messages with the same key use XEP-0308 when `XMPP_EDITABLE_PROGRESS` permits it.
-- `XMPP_ANONYMOUS_MUC_POLICY`: how to treat MUC senders without a real bare JID. `mention_only` (default) still requires a mention when MUC mentions are enabled, `allow` accepts anonymous nicks under the other group gates, and `deny` rejects anonymous MUC senders.
-- Progress: XMPP keeps XEP-0085 typing and XEP-0444 reactions. Generic Hermes previews and tool progress use recipient-probed XEP-0308 edits, then fall back to fresh visible delivery when corrections are unsupported.
-
-Receipt/marker behavior is conservative: replies are only sent after allowlist authorization, marker/receipt stanzas do not get marker replies, and groupchat marker/receipt sending is disabled for now because XEP-0333 requires extra care around MUC stanza IDs (XEP-0359). Processing reactions are likewise conservative: unauthorized senders get no reaction, processing start/success/failure choose from configurable reaction sets, and XEP-0444 failures are soft/no-op. Code that already has a Hermes `MessageEvent` can call the adapter's `react_to_event(event, reactions)` helper to send arbitrary reactions such as `❤️` or `😂`; the helper reuses the original event target and authorization gates rather than accepting raw public message ids. Lifecycle status delivery preserves Hermes thread metadata and can use capability-gated XEP-0308 corrections. The live slixmpp client also requests STARTTLS and requires TLS before authentication.
-
-Equivalent YAML values should live under `gateway.platforms.xmpp.extra` when Hermes loads the plugin:
-
-```yaml
-gateway:
-  platforms:
-    xmpp:
-      enabled: true
-      extra:
-        jid: bot@example.org
-        server: chat.example.org
-        password_file: /run/secrets/hermes-xmpp-password
-        resource: hermes
-        rooms:
-          - room@muc.example.org
-        allowed_users:
-          - user@example.org
-        muc_require_mention: true
-        reaction_success_choices:
-          - ✅
-          - ❤️
-```
-
-## Rollback
-
-This repo is isolated. Rollback is:
-
-1. Disable `gateway.platforms.xmpp.enabled` in Hermes config if it was enabled.
-2. Remove any symlink/copy from `~/.hermes/plugins/`.
-3. Stop/restart only the Hermes gateway if a live Hermes gateway was running.
-4. Delete or archive this repository if no longer needed.
-
-No OpenClaw state or service should be touched.
+See `CONTRIBUTING.md`. This is a documentation-first repo: the highest-value contributions
+are corrections from other Termux installs.

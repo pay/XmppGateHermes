@@ -2096,7 +2096,7 @@ class ParseAndReceiptTests(unittest.IsolatedAsyncioTestCase):
             async def upload_file(self, file_path, content_type=None):
                 raise UploadServiceNotFound("HTTP Upload service not found")
 
-        image_path = "/tmp/hermes-test-image-upload-failure.png"
+        image_path = str(Path(tempfile.gettempdir()) / "hermes-test-image-upload-failure.png")
         Path(image_path).write_bytes(b"fake png")
         xmpp._client = cast(Any, FakeClient())
 
@@ -2132,11 +2132,11 @@ class ParseAndReceiptTests(unittest.IsolatedAsyncioTestCase):
                 *,
                 thread_id=None,
             ):
-                            self.states.append((state, thread_id))
+                self.states.append((state, thread_id))
 
-                    image_path = _win_tmp_path(".png")
-                    Path(image_path).write_bytes(b"fake png")
-                    fake_client = FakeClient()
+        image_path = _win_tmp_path(".png")
+        Path(image_path).write_bytes(b"fake png")
+        fake_client = FakeClient()
         xmpp._client = fake_client
 
         await xmpp.send_typing(
@@ -2263,7 +2263,7 @@ class ParseAndReceiptTests(unittest.IsolatedAsyncioTestCase):
         old = adapter.XMPPAdapter
         try:
             adapter.XMPPAdapter = FakeAdapter
-            video_path = "/tmp/hermes-standalone-video.mp4"
+            video_path = str(Path(tempfile.gettempdir()) / "hermes-standalone-video.mp4")
             Path(video_path).write_bytes(b"fake mp4")
             result = await adapter._standalone_send(cfg, "thanos@example.org", "caption", media_files=[video_path])
         finally:
@@ -2292,7 +2292,7 @@ class ParseAndReceiptTests(unittest.IsolatedAsyncioTestCase):
         old = adapter.XMPPAdapter
         try:
             adapter.XMPPAdapter = FakeAdapter
-            image_path = "/tmp/hermes-standalone-image.jpg"
+            image_path = str(Path(tempfile.gettempdir()) / "hermes-standalone-image.jpg")
             Path(image_path).write_bytes(b"fake jpg")
             result = await adapter._standalone_send(cfg, "thanos@example.org", "caption", media_files=[image_path])
         finally:
@@ -2652,7 +2652,7 @@ class JoinMucRoomTests(unittest.IsolatedAsyncioTestCase):
                 self.wait_called = False
                 self.join_called = False
 
-            async def join_muc_wait(self, room, nick):
+            async def join_muc_wait(self, room, nick, **kwargs):
                 self.wait_called = True
                 self.wait_args = (room, nick)
 

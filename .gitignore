@@ -1,10 +1,79 @@
-__pycache__/
-*.py[cod]
+# --- secrets & personal config (NEVER commit) ---
+.env
+.env.*
+*.env
+.env.local
+.env.*.local
+*.secret
+*.secret.*
+secrets/
+secrets.json
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.pass
+*.password
+credentials
+credentials.json
+.netrc
+.auth_token
+
+# --- Hermes runtime state (personal, machine-local) ---
+.hermes/
+hermes/
+gateway.pid
+gateway_state.json
+*.bak
+*.bak.*
+*.orig
+*.rej
+*.bak-plugins-*
+
+# --- logs ---
+logs/
+*.log
+log/
+
+# --- local test / coverage artifacts ---
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.hypothesis/
+
+# --- virtualenvs & build output ---
 .venv/
+venv/
+env/
+env.*
 dist/
 build/
 *.egg-info/
-.env
-.env.*
+*.egg
+.eggs/
+site/
+
+# --- compiled / cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.manifest
+*.pyc
+
+# --- editor / OS noise ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
