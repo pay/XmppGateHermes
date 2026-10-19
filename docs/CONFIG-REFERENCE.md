@@ -48,6 +48,22 @@ occupant presence (XEP-0045 `<muc#user><x><item jid='…'/>`). In a room that do
 occupant JIDs (anon/semi-anon MUC), that mapping is empty, the allowlist can never match,
 and every message is denied. This is by design, not a bug — see `TROUBLESHOOTING.md`.
 
+**Who the server tells — and the fix.** Room privacy, not config, decides whether the map can be
+filled at all:
+
+| Room `whois` | Who receives `<item jid=…>` | JID allowlist usable? |
+| --- | --- | --- |
+| `nobody` (fully anonymous) | nobody | no |
+| `moderators` (semi-anonymous, common) | moderators only | yes, if the **bot is a moderator** |
+| `anyone` (non-anonymous) | every occupant | yes |
+
+So the way to make this gate real is to have the room owner grant the bot **administrator
+affiliation** (which carries the moderator role). Observed on one room, same account, before and
+after that change: `cached 0/8 occupant nick->JID mapping(s)` → `cached 8/8`. Do not switch the
+room to non-anonymous just to feed this gate — that exposes every member's JID to all occupants.
+Never substitute a nickname allowlist: any occupant can rename to an allowed nick, so a nick gate
+is not an identity check. See `FIELD-NOTES-2026-10-20.md` §3.
+
 ## Delivery & liveness
 
 | Var | Default | Meaning |

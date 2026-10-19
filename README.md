@@ -96,6 +96,10 @@ rsync -a --exclude='.git' ~/XmppGateHermes/ ~/.hermes/plugins/xmpp-platform/
 | `docs/KNOWN-ISSUES.md` | Bugs, environment quirks, compatibility notes |
 | `docs/SKILL.md` | The `hermes-xmpp-termux` Hermes skill and how it maps here |
 | `patches/README.md` | The one Hermes-core patch and why it exists |
+| `docs/FIELD-NOTES-2026-10-20.md` | Findings from the second Termux install: install blockers, the moderator requirement for JID gating, silent MUC kicks, session collisions |
+| `docs/LOCAL-TEST-HARNESS.md` | Loopback XMPP stub: how to prove the transport with no account and no server package |
+| `scripts/xmpp.sh` | Termux gateway helper: `start\|stop\|restart\|status\|log\|edit` (pid validated via `/proc`) |
+| `tools/` | `xmpp_test_server.py`, `gen_test_certs.py` (loopback harness) and `join_probe.py` (MUC kick diagnostic) |
 | `notes/` | Upstream design/architecture notes (background reading) |
 | `skills/hermes-xmpp-termux/SKILL.md` | Shipped copy of the operator skill (live copy in `~/.hermes/skills/`) |
 

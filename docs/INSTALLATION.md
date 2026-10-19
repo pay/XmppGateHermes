@@ -47,6 +47,23 @@ Confirm *(read-only)*:
 > **Why `uv`, not `pip`.** The Hermes gateway venv on this build has **no pip module**.
 > `python -m pip` fails with `No module named pip`. Use `uv pip install --python <venv-python>`.
 
+> **If `uv` is not installed** (it is absent on at least one Termux install, contrary to
+> `README.md`'s assumption), and the venv's `python -m pip` *and* `ensurepip` are both broken
+> (the bundled pip wheel is stripped from the payload), bootstrap pip straight into the gateway
+> venv and use that:
+>
+> ```sh
+> curl -fsSL -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
+> "$PREFIX/lib/hermes-agent/venv/bin/python3" /tmp/get-pip.py
+> "$PREFIX/lib/hermes-agent/venv/bin/python3" -m pip install 'slixmpp[xep-0363]>=1.10,<2'
+> ```
+>
+> Do not install into the system interpreter, and do not use `--target <gateway site-packages>`
+> (it ignores already-installed packages and can clobber shared libraries). `pycares` has no
+> Android wheel and builds from source, needing `pkg install cmake` first. Snapshot
+> `site-packages` before and after and confirm the diff contains only additions. Details and
+> numbers: `FIELD-NOTES-2026-10-20.md` §1.
+
 > **Do not use `hermes pm install` / `hermes pm sync`.** On this build the PM syncs with
 > `uv sync --frozen --all-packages` **without `--inexact`** — exact mode — which *evicts*
 > any package not in the lockfile, including `slixmpp` and `python-telegram-bot`. See

@@ -158,6 +158,25 @@ is not sufficient on its own.
 
 ---
 
+## 9. A MUC kick is invisible, and the adapter does not rejoin
+
+**Severity: operational — the bot is silently absent from a room.**
+
+Rooms can accept the join (self-presence, `join confirmed`) and then remove the occupant ~0.2 s
+later with a bare `<presence type='unavailable'/>` carrying no status code and no reason. There is
+nothing for the adapter to log, so `gateway.log` shows a healthy join while the room shows no bot.
+Observed causes: membership required by the room, and a **ghost occupant** left by a previous
+session when the bot rejoins with the same nick too soon (repeated restarts are the usual way to
+produce that — wait ~90 s between stop and start).
+
+Because a platform adapter joins rooms only at connect/reconnect, a kick leaves the bot out until
+the gateway is restarted; there is no automatic rejoin. `scripts/xmpp.sh restart` encodes the
+90 s wait. Full evidence and the reproduction recipe: `FIELD-NOTES-2026-10-20.md` §4.
+
+**Status:** upstream/room-side behaviour; documented so a kick is diagnosable.
+
+---
+
 ## Third-party code & licensing
 
 - The adapter, manifest and tests derive from the upstream **hermes-xmpp** plugin by
